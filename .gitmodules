@@ -1,0 +1,3 @@
+[submodule "packages/demo_submodule_child"]
+	path = packages/demo_submodule_child
+	url = https://github.com/MrDesjardins/demo_submodule_child
