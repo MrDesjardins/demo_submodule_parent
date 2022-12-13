@@ -10,7 +10,7 @@ git submodule add https://github.com/MrDesjardins/demo_submodule_child ./package
 
 The second step is to modify the `tsconfig.json` to have an alias. It is not _required_ but make the code from the `src` folder of the parent repository to access any submodule package easily.
 
-```json
+```JSON
 "paths": {
   "@demo_submodule_child": ["packages/demo_submodule_child/src"],
   "@demo_submodule_child/*": ["packages/demo_submodule_child/src/*"]
@@ -19,26 +19,26 @@ The second step is to modify the `tsconfig.json` to have an alias. It is not _re
 
 The third step is to add two registries to Node. The following command compiles Typescript into JavaScript and then it calls Node with the two registrys following with the JavaScript entry file.
 
-```json
+```JSON
 "start": "npx tsc && node -r ts-node/register/transpile-only -r tsconfig-paths/register build/src/index.js"
 ```
 
 # How to Modify the SubModule Code
 
-There are several patterns. You can have in a complete other folder the repository and do a change, then push the change. Then come back to the consumer folder and pull the changes. However, that is a lot of steps.
+There are several patterns. You can have the repository in a completely different folder and make a change, then push the change. Then come back to the consumer folder and pull the changes. However, that is a lot of steps.
 
-A more straightforward pattern is to modify the Submodule directly into the consuming (parent) project. You can push changes from that SubModule and the changes will then be available to every one using the child repository.
+A more straightforward pattern is to modify the Submodule directly into the consuming (parent) project. Then, you can push changes from that SubModule, and the changes will be available to everyone using the child repository.
 
 
 # Good to Know
 
 ## GitModule File
-Within your parent repository, when the `git submodule` was performed, it created an hidden file called `.gitmodules`. In our example, it contains:
+Within your parent repository, when the `git submodule` was performed, it created a hidden file called `.gitmodules`. In our example, it contains:
 
 ```
 [submodule "packages/demo_submodule_child"]
-	path = packages/demo_submodule_child
-	url = https://github.com/MrDesjardins/demo_submodule_child
+  path = packages/demo_submodule_child
+  URL = https://github.com/MrDesjardins/demo_submodule_child
 ```
 
 ## Pushing Changes From SubModule
@@ -56,7 +56,7 @@ Changes not staged for commit:
   (use "git restore <file>..." to discard changes in working directory)
   (commit or discard the untracked or modified content in submodules)
         modified:   packages/demo_submodule_child (modified content)
-        modified:   readme.md
+        modified:   readme.MD
 
 no changes added to commit (use "git add" and/or "git commit -a")
 
@@ -72,7 +72,7 @@ Your branch is ahead of 'origin/master' by 1 commit.
 
 Changes to be committed:
   (use "git restore --staged <file>..." to unstage)
-        modified:   readme.md
+        modified:   readme.MD
 
 Changes not staged for commit:
   (use "git add <file>..." to update what will be committed)
@@ -111,7 +111,7 @@ You can see that when we performed `cd` that the prompt changed with awareness t
 # Version
 Each commit in the submodule is tracked with the parent. Because the commit version is part of the submodule system, it allows a parent to refer to a previous version. Hence, there is no obligation to be on the latest version of the submodule.
 
-For example, if there is two commits on the submodule and the parent is still on the first one. A `git log` in the submodule folder gives:
+For example, if there are two commits on the submodule and the parent is still on the first one. A `git log` in the submodule folder gives:
 
 ```
 commit d9024dbcc10578f18abb1c29fa08f43929f80f6c (HEAD -> master, origin/master, origin/HEAD)
@@ -135,12 +135,64 @@ index 795569b..d9024db 160000
 +Subproject commit d9024dbcc10578f18abb1c29fa08f43929f80f6c
 ```
 
-However, any other project that use the submodule is still refering to `795569b2fa0111b1db23424722793795a6f9ec4a` which allows to have your project free to update at any time.
+However, any other project that uses the submodule is still refering to `795569b2fa0111b1db23424722793795a6f9ec4a` which allows to have your project free to update at any time.
 
-# Advantages and Inconvenients
+# External Dependencies
+If the submodule has external dependencies, then there are two different approaches.
 
-The main advantages are how easy is to modify the code without having to rely on `NPM`. Working on another submodule is like working with code that is local to your project. A big advantage is that if you rely on VsCode to debug your code that it will work flawlessly becaue for VsCode debugger that code is part of your project. Another advantage is that it uses the dependencies of your project. While it is a good practice to being able to compile the submodule independently and having a set of package file, it is easier to handle versionning if the submodule is used between projects you own. There is no need to rely on `npm link` which can be brittle and require compiling between changes with a lot of requirement like the same NPM version.
+1. You can have the parent having the same dependencies
+2. You can install the dependencies on the submodule
 
-The main disadvantanges are that it works well at some scale. I would not recommend to develop a huge system with a lot of dependencies. However, if you have a couple of Node projects that need shared files it is easy to setup and does not require you to have a private NPM repository. Hence, this solution works well on a small scale with private intention.
+The first solution is attractive if you want the parent to decide the exact version that may break the build if there are breaking changes. However, it allows controlling the version.
 
-Relying on NPM to have a well tested, isolated and atomic library is ideal but requires to have a bundler, a private NPM repository and tools that facilitate code modification and debugging that the Git submodule solution does not need.
+The second solution is viable if you want to not manage dependencies from many submodules.
+
+## Solution 1: Install Child Dependencies into Parent Dependencies
+
+You can use the `npm install` using the `file:` format or to add the dependencies manually.
+```
+npm install --save file:packages/demo_submodule_child
+```
+More often than not, in private repositories that need sharing code, all the repositories have about the same dependencies. Thus, it is manageable to rely on manually taking the dependencies.
+
+## Solution 2: Install Submodule Dependencies
+
+You can move into the submodule directory with the current demo and perform `npm install`.
+
+```
+cd packages/demo_submodule_child/
+npm install
+```
+
+Then running the parent `npm run start` works as it can compile because during compilation, it finds the `node_modules` directory of the submodule. You can confirm by using `npx typescript --traceResolution | grep "trim"`. The last line shows that it fines the `trim` into `demo_submodule_parent/packages/demo_submodule_child/node_modules/trim`.
+
+```sh
+❯ npx tsc --traceResolution | grep "trim"
+======== Resolving module 'trim' from '/mnt/c/code/demo_submodule_parent/packages/demo_submodule_child/src/index.ts'. ========
+'baseUrl' option is set to '/mnt/c/code/demo_submodule_parent', using this value to resolve non-relative module name 'trim'.
+'paths' option is specified, looking for a pattern to match module name 'trim'.
+'baseUrl' option is set to '/mnt/c/code/demo_submodule_parent', using this value to resolve non-relative module name 'trim'.
+Resolving module name 'trim' relative to base url '/mnt/c/code/demo_submodule_parent' - '/mnt/c/code/demo_submodule_parent/trim'.
+Loading module as file / folder, candidate module location '/mnt/c/code/demo_submodule_parent/trim', target file type 'TypeScript'.
+File '/mnt/c/code/demo_submodule_parent/trim.ts' does not exist.
+File '/mnt/c/code/demo_submodule_parent/trim.tsx' does not exist.
+File '/mnt/c/code/demo_submodule_parent/trim.d.ts' does not exist.
+Directory '/mnt/c/code/demo_submodule_parent/trim' does not exist, skipping all lookups in it.
+Loading module 'trim' from 'node_modules' folder, target file type 'TypeScript'.
+Found 'package.json' at '/mnt/c/code/demo_submodule_parent/packages/demo_submodule_child/node_modules/trim/package.json'.
+```
+
+## Word of Caution
+There is some specific scenario, like for the [graphql]https://www.npmjs.com/package/graphql() library, that has a runtime check to ensure a unique dependency on the library. Relying on the two node_modules (parent + child) causes a runtime (not compilation time) error. Hence, solution #1 might be only possible in some situations.
+
+# Advantages and Inconvenient
+
+The main advantages are how easy it is to modify the code without relying on `NPM`. Working on another submodule is like working with local code for your project. A significant advantage is that if you rely on VsCode to debug your code, it will work flawlessly because for VsCode debugger, that code is part of your project. Another advantage is that it uses the dependencies of your project. While it is an excellent practice to compile the submodule independently and have a set of package file, it is easier to handle versioning if the submodule is used between projects you own. There is no need to rely on `npm link` which can be brittle and require compiling between changes with many requirements like the same NPM version.
+
+The main disadvantages are that it works well at some scale. Therefore, I recommend using submodules only when developing a small system with a few dependencies. However, if you have a couple of Node projects that need shared files, it is easy to set up and does not require you to have a private NPM repository. Hence, this solution works well on a small scale with private intention.
+
+Relying on NPM to have a well-tested, isolated and atomic library is ideal. Still, it requires a bundler, a private NPM repository, and tools that facilitate code modification, another continuous integration pipeline and debugging that the Git submodule solution does not need.
+
+# Conclusion
+
+Like every tool, there are situations where it is appropriate and some are not. If you have a time constraint or infrastructure limitations, you can still share code without duplicating using the Git Submodules solution. For a larger scale, with many people involved and many projects, it might be wise to create a defined library if time or process is available.
