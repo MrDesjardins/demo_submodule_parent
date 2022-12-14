@@ -183,7 +183,7 @@ Found 'package.json' at '/mnt/c/code/demo_submodule_parent/packages/demo_submodu
 ```
 
 ## Word of Caution
-There is some specific scenario, like for the [graphql]https://www.npmjs.com/package/graphql() library, that has a runtime check to ensure a unique dependency on the library. Relying on the two node_modules (parent + child) causes a runtime (not compilation time) error. Hence, solution #1 might be only possible in some situations.
+There is some specific scenario, like for the [graphql](https://www.npmjs.com/package/graphql) library, that has a runtime check to ensure a unique dependency on the library. Relying on the two node_modules (parent + child) causes a runtime (not compilation time) error. Hence, solution #1 might be only possible in some situations.
 
 # Advantages and Inconvenient
 
